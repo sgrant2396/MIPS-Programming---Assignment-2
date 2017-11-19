@@ -1,0 +1,21 @@
+# MIPS-Programming-Assignment-2
+#Fall 2017 Computer Organization I MIPS Assembly Assignment 2
+# Sean Grant @02753064
+
+.data
+	str:	 #label for the input string
+	.space 1001 #declares 1000 bytes of space for the input string (up to 1000 characters)
+	str2:    #label for the error string
+	.asciiz "Invalid hexadecimal number."
+	decimalValue: .word 0:8
+.text	
+main: 
+	   li $v0, 8              # system call code for reading an input string = 8	
+	   la $a0, str            # loads the string entered into register $a0
+	   li $a1, 10001          # tells the operating system that 1000 bytes were declared for the string
+	   syscall	          # calls the operating system
+	   
+	   add $t3, $a0, $zero    # copy the contents of $a0 to $t3. Used for getting each character
+	   add $t4, $a0, $zero    # copy the contents of $a0 to $t4. Used for counter loop
+	   addi $t7, $zero, 0     # $t7 ===> Index for the two arrays
+	   add $a3, $zero, $zero  # initializing $a3 counter
