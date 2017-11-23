@@ -3,15 +3,14 @@
 # Sean Grant @02753064
 
 .data
-	str:	      #label for the input string
-	.space 1001   #declares 1000 bytes of space for the input string (up to 1000 characters)
-	str2:         #label for the error string
+	str:	      
+	.space 1001   
+	str2:         
 	.asciiz "NaN"
 	str3:
 	.ascii "too large"
 	eachString: .word 0:10001     # array that holds each string that wasseperated by a comma
-	outputString: .word 0:10001   # output string that will hold the outputs to be printed
-	decimalValue: .word 0:8        # array that will hold the decimal values of each hex digit
+	decimalValue: .word 0:8       # array that will hold the decimal values of each hex digit
 .text	
 main: 
 	   li $v0, 8              # system call code for reading an input string = 8	
@@ -22,6 +21,7 @@ main:
 	   addi $t3, $zero, 0     # eachString index = 0
 	   
 resetCounter:	add $t4, $zero, $zero # initializing the counter that counts how many characters are in the string
+                add $t5, $zero, $zero               # initialize counter that will check for empty strings
 getEachString:  lb $t2, 0($t1)                      # load each character of the entered string into $t2
                 beq $t2, 44, selectionProcess       # if the character is a comma, branch to the next section
                 beq $t2, 0, selectionProcessEND     # if the character is the NULL, end of entire string 
@@ -29,23 +29,28 @@ getEachString:  lb $t2, 0($t1)                      # load each character of the
                 sb $t2, eachString($t3)             # load each character into the eachString array
                 addi $t4, $t4, 1                    # increment string counter
                 addi $t3, $t3, 1                    # increment index for individual string array
-                addi $t1, $t1, 1	            # increment index for the entire string entered by user
+                addi $t1, $t1, 1                    # increment index for the entire string entered by user
+                seq $s2, $t2, 32	            # set $s2 to 1 if charcter is a space
+                beq $s2, 1, emptyString             # if the character is a space, count the number of spaces
 	        j getEachString                     # restart loop
 	        
-selectionProcess: addi $t1, $t1, 1                
+selectionProcess: addi $t1, $t1, 1                  # incrment to the next character after the comma
+                  beq $t4, 0, printNaN              # if the only character checked was a comma...print NaN
+                  beq $t5, $t4, printNaN            # if the string is empty, print NaN          
                   sgt $s1, $t4, 8                   # checks for a string that is less than or equal to 8 characters
-                  beq $s1, 1, printTooLong 
-                  add $t5, $zero, $zero
+                  beq $s1, 1, printTooLong          # if string is larger than 8 characters, print "too long"
+                  j StartLoop
                   
-emptyString:      beq        # checks for empty string 
+emptyString:      addi $t5, $t5, 1                  # count how many spaces are in the string
+                  j getEachString
 	             	        	          	        	        
-StartLoop: lb $t2, 0($t3)              # loads each byte of the string into $t2
-           beq $t2, 0, endLoop         # if the character we are at is the NULL character, exit the loop
-           beq $t2, 10, endLoop        # if the character we are at is the newline character, exit the loop  
-           sge $s0, $t2, 48            # if the character we are looking at is '0' or above '0' then $s0 is set to the value 1
-           sle $s1, $t2, 57            # if the character we are looking at is '9' or below '9' then $s1 is set to the value 1
-           beq $s0, 1, Test1Condition2 # if $s0 is equal to 1, then the character is greater than or equal to '0'
-           j Test2Condition1           # fails the first test, moves on to check the character against the second test 
+StartLoop:   addi $t5, $zero, 0
+	     addi $t7, $zero, 0
+CheckString: lb $t2, eachString($t5)     # loads each byte of the string into $t2 
+             sge $s0, $t2, 48            # if the character we are looking at is '0' or above '0' then $s0 is set to the value 1
+             sle $s1, $t2, 57            # if the character we are looking at is '9' or below '9' then $s1 is set to the value 1
+             beq $s0, 1, Test1Condition2 # if $s0 is equal to 1, then the character is greater than or equal to '0'
+             j Test2Condition1           # fails the first test, moves on to check the character against the second test 
 
 Test1Condition2: bne $s1, 1, Test2Condition1 # if $s1 was not set, fails the first test. Moves on to check against the second test
                  addi $t6, $t2, -48          # gets the actual decimal value of the character if its between 0-9
@@ -67,22 +72,25 @@ Test2Condition2: bne $s3, 1, Test3Condition1 # if $s3 was not set, fails the sec
 Test3Condition1: sge $s4, $t2, 65            # if the character we are looking at is 'A' or above 'A' then $s4 is set to the value 1
                  sle $s5, $t2, 70            # if the character we are looking at is 'F' or below 'F' then $s5 is set to the value 1   
                  beq $s4, 1, Test3Condition2 # if $s4 is equal to 1, then the character is greater than or equal to 'A'
-                 j printInvalid              # all three tests failed for this character, go to print the error message and exit the loop           
+                 j printNaN                  # all three tests failed for this character, go to print the error message and exit the loop           
 
-Test3Condition2: bne $s5, 1, printInvalid    # if $s5 was not set, fails the third test. prints the error message
+Test3Condition2: bne $s5, 1, printNaN        # if $s5 was not set, fails the third test. prints the error message
                  addi $t6, $t2, -55          # gets the decimal value of the character if its between A-F
                  sb $t6, decimalValue($t7)   # stores calue in array
                  addi $t7, $t7, 1            # increments array index
                  j NextChar                  # otherwise it passes the third test, moves on to the next character        
 
-NextChar:  addi $t3, $t3, 1   # increments the $rs register in order to read the next byte of the string
-	   j StartLoop        # jump back to the beginning of the loop
+NextChar:  addi $t5, $t5, 1            # increments the register in order to read the next byte of the string
+           beq $t5, $t4, subProgram2   # EXITS LOOP if the number of characters is equal to the string index
+	   j CheckString               # jump back to the beginning of the loop
 	   
 	       	        	           	        	        
 	       	        	           	        	            	        	           	        	            	        	           	        	        
 	             	        	           	        	           	        	        
 	             	        	           	        	           	        	           	        	           	        	        
 selectionProcessEND:   # checks if it is the last string entered and if it has >8 hex characters
+	        
+# COPY THE SELECTION STUF FROM THE OTHER SELECTIONPROCESS	        
 	        
 subProgram2:        #proceedure number 2 convert each char to hex decimal value
 	   
@@ -91,11 +99,18 @@ subProgram1:        #proceedure number 1 convert each string to hex decimal vale
 
 subProgram3:        #proceedure number 3 print output array that holds all strings 
 
-printNaN:
+printNaN:       li $v0, 4     # call code to print a string
+	        la $a0, str2  # print error message
+	        syscall	      # call OS
+	        li $v0, 11    # call code to rint out a character
+	        li $a0, ','   # print comma  
+	        syscall       # call OS
+	        j resetCounter  
 
 printTooLong:   li $v0, 4     # call code to print a string
 	        la $a0, str3  # print error message
 	        syscall	      # call OS
 	        li $v0, 11    # call code to rint out a character
 	        li $a0, ','   # print comma  
-	        syscall    
+	        syscall       # call OS
+	        j resetCounter   
