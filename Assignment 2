@@ -7,9 +7,11 @@
 	.space 1001   #declares 1000 bytes of space for the input string (up to 1000 characters)
 	str2:         #label for the error string
 	.asciiz "NaN"
+	str3:
+	.ascii "too large"
 	eachString: .word 0:10001     # array that holds each string that wasseperated by a comma
 	outputString: .word 0:10001   # output string that will hold the outputs to be printed
-	decimalValue .word 0:8        # array that will hold the decimal values of each hex digit
+	decimalValue: .word 0:8        # array that will hold the decimal values of each hex digit
 .text	
 main: 
 	   li $v0, 8              # system call code for reading an input string = 8	
@@ -19,23 +21,81 @@ main:
 	   add $t1, $a0, $zero    # t1 holds address of first char in string
 	   addi $t3, $zero, 0     # eachString index = 0
 	   
+resetCounter:	add $t4, $zero, $zero # initializing the counter that counts how many characters are in the string
 getEachString:  lb $t2, 0($t1)                      # load each character of the entered string into $t2
-                beq $t2, 44, slectionProcess        # if the character is a comma, branch to the next section
+                beq $t2, 44, selectionProcess       # if the character is a comma, branch to the next section
                 beq $t2, 0, selectionProcessEND     # if the character is the NULL, end of entire string 
                 beq $t2, 10, selectionProcessEND    # if the character is the new line, end of entire string 
                 sb $t2, eachString($t3)             # load each character into the eachString array
-                addi $t3, $t3, 1                    # increment index
-                addi $t1, $t1, 1	            # increment index
+                addi $t4, $t4, 1                    # increment string counter
+                addi $t3, $t3, 1                    # increment index for individual string array
+                addi $t1, $t1, 1	            # increment index for the entire string entered by user
 	        j getEachString                     # restart loop
 	        
-slectionProcess:
-	        
-	        	        	        
+selectionProcess: addi $t1, $t1, 1                
+                  sgt $s1, $t4, 8                   # checks for a string that is less than or equal to 8 characters
+                  beq $s1, 1, printTooLong 
+                  add $t5, $zero, $zero
+                  
+emptyString:      beq        # checks for empty string 
+	             	        	          	        	        
+StartLoop: lb $t2, 0($t3)              # loads each byte of the string into $t2
+           beq $t2, 0, endLoop         # if the character we are at is the NULL character, exit the loop
+           beq $t2, 10, endLoop        # if the character we are at is the newline character, exit the loop  
+           sge $s0, $t2, 48            # if the character we are looking at is '0' or above '0' then $s0 is set to the value 1
+           sle $s1, $t2, 57            # if the character we are looking at is '9' or below '9' then $s1 is set to the value 1
+           beq $s0, 1, Test1Condition2 # if $s0 is equal to 1, then the character is greater than or equal to '0'
+           j Test2Condition1           # fails the first test, moves on to check the character against the second test 
+
+Test1Condition2: bne $s1, 1, Test2Condition1 # if $s1 was not set, fails the first test. Moves on to check against the second test
+                 addi $t6, $t2, -48          # gets the actual decimal value of the character if its between 0-9
+                 sb $t6, decimalValue($t7)   # stores the value in array
+                 addi $t7, $t7, 1            # increment to the next element in the array        
+                 j NextChar                  # passes the first test, moves on to the next character in the string
+
+Test2Condition1: sge $s2, $t2, 97            # if the character we are looking at is 'a' or above 'a' then $s2 is set to the value 1 
+                 sle $s3, $t2, 102           # if the character we are looking at is 'f' or below 'f' then $s3 is set to the value 1         
+                 beq $s2, 1, Test2Condition2 # if $s2 is equal to 1, then the character is greater than or equal to 'a' 
+                 j Test3Condition1           # fails the second test, moves on to check the character against the third test
+
+Test2Condition2: bne $s3, 1, Test3Condition1 # if $s3 was not set, fails the second test. Moves on to check against the third test
+                 addi $t6, $t2, -87          # gets the decimal value of the character if its between a-f
+                 sb $t6, decimalValue($t7)   # stores the value in array
+                 addi $t7, $t7, 1            # increments array index
+                 j NextChar                  # passes the second test, moves on to the next character in the string
+
+Test3Condition1: sge $s4, $t2, 65            # if the character we are looking at is 'A' or above 'A' then $s4 is set to the value 1
+                 sle $s5, $t2, 70            # if the character we are looking at is 'F' or below 'F' then $s5 is set to the value 1   
+                 beq $s4, 1, Test3Condition2 # if $s4 is equal to 1, then the character is greater than or equal to 'A'
+                 j printInvalid              # all three tests failed for this character, go to print the error message and exit the loop           
+
+Test3Condition2: bne $s5, 1, printInvalid    # if $s5 was not set, fails the third test. prints the error message
+                 addi $t6, $t2, -55          # gets the decimal value of the character if its between A-F
+                 sb $t6, decimalValue($t7)   # stores calue in array
+                 addi $t7, $t7, 1            # increments array index
+                 j NextChar                  # otherwise it passes the third test, moves on to the next character        
+
+NextChar:  addi $t3, $t3, 1   # increments the $rs register in order to read the next byte of the string
+	   j StartLoop        # jump back to the beginning of the loop
+	   
+	       	        	           	        	        
+	       	        	           	        	            	        	           	        	            	        	           	        	        
+	             	        	           	        	           	        	        
+	             	        	           	        	           	        	           	        	           	        	        
 selectionProcessEND:   # checks if it is the last string entered and if it has >8 hex characters
 	        
-ConvertSingleChar:     #proceedure number 1 convert each char to hex decimal value
+subProgram2:        #proceedure number 2 convert each char to hex decimal value
 	   
-ConvertHexString:      #proceedure number 2 convert each string to hex decimal vale
+subProgram1:        #proceedure number 1 convert each string to hex decimal vale
 
 
-display:               #proceedure number 3 print output array that holds all strings 
+subProgram3:        #proceedure number 3 print output array that holds all strings 
+
+printNaN:
+
+printTooLong:   li $v0, 4     # call code to print a string
+	        la $a0, str3  # print error message
+	        syscall	      # call OS
+	        li $v0, 11    # call code to rint out a character
+	        li $a0, ','   # print comma  
+	        syscall    
