@@ -323,7 +323,7 @@ eightElements: add $t9, $zero, $zero
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 16777216
              multu $t5, $t6 
-             mflo $t7
+             mflo $t7 
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
              lb $t5, decimalValue($t9)      # loads the value from array element
