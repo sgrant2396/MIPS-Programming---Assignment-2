@@ -36,7 +36,7 @@ continue:       sb $t2, eachString($t3)             # load each character into t
                 seq $s2, $t2, 32	            # set $s2 to 1 if charcter is a space
                 beq $s2, 1, emptyString             # if the character is a space, count the number of spaces
 	        j getEachString                     # restart loop
-	        
+		
 selectionProcess: addi $t1, $t1, 1                  # incrment to the next character after the comma
                   beq $t4, 0, printNaN              # if the only character checked was a comma...print NaN
                   beq $t5, $t4, printNaN            # if the string is empty, print NaN          
