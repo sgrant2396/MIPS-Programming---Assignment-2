@@ -185,12 +185,12 @@ fourElements: add $t9, $zero, $zero
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 256
              multu $t5, $t6 
-             mflo $t7
+             mflo $t7                       # gets the result from the multiplication
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 16  
-             multu $t5, $t6 
+             multu $t5, $t6                 # unsigned multiplication
              mflo $t7   
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
@@ -420,7 +420,7 @@ printNaN:       li $v0, 4     # call code to print a string
 printTooLong:   li $v0, 4     # call code to print a string
 	        la $a0, str3  # print error message
 	        syscall	      # call OS
-	        li $v0, 11    # call code to rint out a character
+	        li $v0, 11    # call code to print out a character
 	        li $a0, ','   # print comma  
 	        syscall       # call OS
 	        add $t2, $zero, $zero
@@ -429,4 +429,4 @@ printTooLong:   li $v0, 4     # call code to print a string
 	        j resetCounter 
 	        
 EndOfCode:      li $v0, 10
-	        syscall  
+	        syscall 
