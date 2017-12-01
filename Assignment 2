@@ -36,7 +36,7 @@ continue:       sb $t2, eachString($t3)             # load each character into t
                 seq $s2, $t2, 32	            # set $s2 to 1 if charcter is a space
                 beq $s2, 1, emptyString             # if the character is a space, count the number of spaces
 	        j getEachString                     # restart loop
-		
+	        
 selectionProcess: addi $t1, $t1, 1                  # incrment to the next character after the comma
                   beq $t4, 0, printNaN              # if the only character checked was a comma...print NaN
                   beq $t5, $t4, printNaN            # if the string is empty, print NaN          
@@ -83,14 +83,14 @@ EndHexCheck: jal subProgram2
 	            	        	           	              	        	           	        	           	        	           	        	           	        	               
 FlipEndSwitch: addi $t9, $zero, 1
                sb $t9, EndSwitch($t6)
-               j continue
+               j selectionProcess
 	        	        
 	        	        	        
 	        	        	        	        	        
 subProgram2:  add $t0, $ra, $zero         # copies the return address to $t0
               addi $t5, $zero, 0          # initilize $t5 which is the index for each char in the string 
-	      addi $t7, $zero, 0          # initilize $t7 which is the index for loading the ACTUAL vlues into the decimalValues array
-CheckString2: addi $s5, $zero, 0          # initilize $s5 ====> Flag is set when digit 0 - 9 is found in the string
+	      addi $t7, $zero, 0          # initilize $t7 which is the index for loading the ACTUAL values into the decimalValues array
+CheckString2: addi $t8, $zero, 0          # initilize $s5 ====> Flag is set when digit 0 - 9 is found in the string
               addi $s6, $zero, 0          # initilize $s6 ====> Flag is set when digit a - f is found in the string
               addi $s7, $zero, 0          # initilize $s7 ====> Flag is set when digit A - F is found in the string
               beq $t5, $t4, AddTheValues  # EXITS LOOP if the number of characters is equal to the string index
@@ -101,7 +101,7 @@ CheckString2: addi $s5, $zero, 0          # initilize $s5 ====> Flag is set when
               j Test2Part1                # fails the first test, moves on to check the character against the second test 
 	   
 Test1Part2: bne $s1, 1, Test2Part1        # if $s1 was not set, fails the first test. Moves on to check against the second test
-            addi $s5, $zero, 1            # FIRST TEST PASSED ==> set flag to indicate this is a 0 - 9 character
+            addi $t8, $zero, 1            # FIRST TEST PASSED ==> set flag to indicate this is a 0 - 9 character
             jal subProgram1               # go to subprogram that gets the individual value of each hex char    
             j CheckString2                # restart loop    
 
@@ -185,12 +185,12 @@ fourElements: add $t9, $zero, $zero
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 256
              multu $t5, $t6 
-             mflo $t7                       # gets the result from the multiplication
+             mflo $t7
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 16  
-             multu $t5, $t6                 # unsigned multiplication
+             multu $t5, $t6 
              mflo $t7   
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
@@ -323,7 +323,7 @@ eightElements: add $t9, $zero, $zero
              lb $t5, decimalValue($t9)      # loads the value from array element
              addi $t6, $zero, 16777216
              multu $t5, $t6 
-             mflo $t7 
+             mflo $t7
              add $t8, $t8, $t7              # calculate sum
              addi $t9, $t9, 1
              lb $t5, decimalValue($t9)      # loads the value from array element
@@ -364,31 +364,26 @@ eightElements: add $t9, $zero, $zero
              jr $ra                         # return to calling subprogram
 	   
 	   
-	   
-	   
-	   
-	   
-	   
-subProgram1:  beq $s5, 1, decimalDigitFound    # if a 0 - 9 char was found...
+subProgram1:  beq $t8, 1, decimalDigitFound    # if a 0 - 9 char was found...
               beq $s6, 1, lowercaseFound       # if a a - f char was found...
               beq $s7, 1, uppercaseFound       # if a A - F char was found...
 decimalDigitFound: addi $t6, $t2, -48          # gets the actual decimal value of the character if its between 0-9
                    sb $t6, decimalValue($t7)   # stores the value in array
                    addi $t7, $t7, 1            # increment to the next element in the array
                    addi $t5, $t5, 1            # increment to the next char
-                   jr $ra                      # return to calling subprogram
+                   j CheckString2              # return to calling subprogram
                    
 lowercaseFound:    addi $t6, $t2, -87          # gets the actual decimal value of the character if its between 0-9
                    sb $t6, decimalValue($t7)   # stores the value in array
                    addi $t7, $t7, 1            # increment to the next element in the array
                    addi $t5, $t5, 1            # increment to the next char
-                   jr $ra                      # return to calling subprogram
+                   j CheckString2              # return to calling subprogram
  
 uppercaseFound:    addi $t6, $t2, -55          # gets the actual decimal value of the character if its between 0-9
                    sb $t6, decimalValue($t7)   # stores the value in array
                    addi $t7, $t7, 1            # increment to the next element in the array
                    addi $t5, $t5, 1            # increment to the next char
-                   jr $ra                      # return to calling subprogram
+                   j CheckString2              # return to calling subprogram
 
 
 
@@ -420,7 +415,7 @@ printNaN:       li $v0, 4     # call code to print a string
 printTooLong:   li $v0, 4     # call code to print a string
 	        la $a0, str3  # print error message
 	        syscall	      # call OS
-	        li $v0, 11    # call code to print out a character
+	        li $v0, 11    # call code to rint out a character
 	        li $a0, ','   # print comma  
 	        syscall       # call OS
 	        add $t2, $zero, $zero
@@ -429,4 +424,5 @@ printTooLong:   li $v0, 4     # call code to print a string
 	        j resetCounter 
 	        
 EndOfCode:      li $v0, 10
-	        syscall 
+	        syscall  
+
