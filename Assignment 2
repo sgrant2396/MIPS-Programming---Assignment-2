@@ -11,7 +11,6 @@
 	.ascii "too large"
 	eachString: .word 0:10001 # array that holds each string that wasseperated by a comma
 	decimalValue: .word 0:8   # array that will hold the decimal values of each hex digit
-	EndSwitch: .byte 0        # switch that tells if the last substring has been reached or not
 .text	
 main: 
 	   li $v0, 8              # system call code for reading an input string = 8	
@@ -21,6 +20,9 @@ main:
 	   add $t1, $a0, $zero    # t1 holds address of first char in string
 	   addi $t3, $zero, 0     # eachString index = 0
 	   addi $t6, $zero, 0     # initialize $t6 for its operation with the EndSwitch variable
+	   addi $a3, $zero, 0     # VERY IMPORTANT - INITIALIZE THE SWTICH THAT ENDS THE ENTIRE PROGRAM
+	   
+##################################################### This following section copies characters into an array until a comma is read	   
 	   
 resetCounter:	add $t4, $zero, $zero # initializing the counter that counts how many characters are in the string
                 add $t5, $zero, $zero               # initialize counter that will check for empty strings
@@ -36,7 +38,9 @@ continue:       sb $t2, eachString($t3)             # load each character into t
                 seq $s2, $t2, 32	            # set $s2 to 1 if charcter is a space
                 beq $s2, 1, emptyString             # if the character is a space, count the number of spaces
 	        j getEachString                     # restart loop
-	        
+	 
+##################################################### following section checks for "too long" strings or empty strings  
+	                      
 selectionProcess: addi $t1, $t1, 1                  # incrment to the next character after the comma
                   beq $t4, 0, printNaN              # if the only character checked was a comma...print NaN
                   beq $t5, $t4, printNaN            # if the string is empty, print NaN          
@@ -46,6 +50,8 @@ selectionProcess: addi $t1, $t1, 1                  # incrment to the next chara
                   
 emptyString:      addi $t5, $t5, 1       # count how many spaces are in the string
                   j getEachString        # restart internal loop that checks each char in individual string
+	             	        	          	        	        
+########################################## Followig section checks for Hex characters	             	        	          	                
 	             	        	          	        	        
 StartLoop:   addi $t5, $zero, 0          # initialize $t5 which is the index for reading each char from string
 CheckString: lb $t2, eachString($t5)     # loads each byte of the string into $t2 
@@ -76,16 +82,18 @@ Test3Condition2: bne $s5, 1, printNaN        # if $s5 was not set, fails the thi
 NextChar:  addi $t5, $t5, 1                  # increments the register in order to read the next byte of the string
            beq $t5, $t4, EndHexCheck         # EXITS LOOP if the number of characters is equal to the string index
 	   j CheckString                     # jump back to the beginning of the loop
-	  
+
+############################################## Following section controls which subroutine is entered next and when to set exit switch
+	  	  	  
 EndHexCheck: jal subProgram2	  	       	        	           	        	            	        	           	        	            	        	           	        	        	       	        	           	        	            	        	           	        	            	        	           	        	        
              jal subProgram3           	        	           	        	           	        	        	             	        	           	        	           	        	        
 	     j resetCounter 
 	            	        	           	              	        	           	        	           	        	           	        	           	        	               
-FlipEndSwitch: addi $t9, $zero, 1
-               sb $t9, EndSwitch($t6)
+FlipEndSwitch: addi $a3, $zero, 1
                j selectionProcess
 	        	        
-	        	        	        
+########################################### subprogram2 converts each he character into ints decimal value by checking to see hex character
+#                                           it is and then calls subprogram1 to do the conversion of each character	        	        	        
 	        	        	        	        	        
 subProgram2:  add $t0, $ra, $zero         # copies the return address to $t0
               addi $t5, $zero, 0          # initilize $t5 which is the index for each char in the string 
@@ -124,7 +132,10 @@ Test3Part2: bne $s5, 1, printNaN        # if $s5 was not set, fails the third te
             addi $s7, $zero, 1          # THIRD TEST PASSED ==> set flag to indicate this is a A - F character
             jal subProgram1             # go to subprogram that gets the individual value of each hex char
             j CheckString2              # restart loop
-	   
+
+######################################### Section branches to th correct label that adds up the decimal values based on
+#                                         how many digits were in the hex number	   
+	   	   	   
 AddTheValues:   add $t8, $zero, $zero        # initialize $t8, index of
                 beq $t4, 1, oneElement       
                 beq $t4, 2, twoElements      
@@ -363,7 +374,8 @@ eightElements: add $t9, $zero, $zero
              add $ra, $t0, $zero            # get the return address for the firt subprogram call
              jr $ra                         # return to calling subprogram
 	   
-	   
+################################################ subprogram1 converts each hex character to its decimal number and saves it in an array
+	   	   
 subProgram1:  beq $t8, 1, decimalDigitFound    # if a 0 - 9 char was found...
               beq $s6, 1, lowercaseFound       # if a a - f char was found...
               beq $s7, 1, uppercaseFound       # if a A - F char was found...
@@ -385,7 +397,7 @@ uppercaseFound:    addi $t6, $t2, -55          # gets the actual decimal value o
                    addi $t5, $t5, 1            # increment to the next char
                    j CheckString2              # return to calling subprogram
 
-
+################################# subprogram3 prints out the corresponding statement or decimal value
 
 subProgram3:  lw $t8, 0($sp)    # POP THE TOTAL VALUE OFF THE STACK AND STORE IT IN $t8  
               addi $sp, $sp, 4  # POP THE TOTAL VALUE OFF THE STACK AND STORE IT IN $t8
@@ -395,32 +407,23 @@ subProgram3:  lw $t8, 0($sp)    # POP THE TOTAL VALUE OFF THE STACK AND STORE IT
               li $v0, 11        # Call code to print a character
               la $a0, ','       # print a comma
               syscall           # call to OS
-              add $t2, $zero, $zero
-              lb $t3, EndSwitch($t2)
-              beq $t3, 1, EndOfCode
+              beq $a3, 1, EndOfCode
               jr $ra
-              
-
 printNaN:       li $v0, 4     # call code to print a string
 	        la $a0, str2  # print error message
 	        syscall	      # call OS
 	        li $v0, 11    # call code to rint out a character
 	        li $a0, ','   # print comma  
 	        syscall       # call OS
-	        add $t2, $zero, $zero
-                lb $t3, EndSwitch($t2)
-                beq $t3, 1, EndOfCode
+	        beq $a3, 1, EndOfCode
 	        j resetCounter  
-
 printTooLong:   li $v0, 4     # call code to print a string
 	        la $a0, str3  # print error message
 	        syscall	      # call OS
 	        li $v0, 11    # call code to rint out a character
 	        li $a0, ','   # print comma  
 	        syscall       # call OS
-	        add $t2, $zero, $zero
-                lb $t3, EndSwitch($t2)
-                beq $t3, 1, EndOfCode
+	        beq $a3, 1 EndOfCode
 	        j resetCounter 
 	        
 EndOfCode:      li $v0, 10
